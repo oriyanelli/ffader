@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Mantenimiento - Carros A, B y C</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS para exportación a Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Typography Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-800 bg-slate-50 antialiased">
+
+    <!-- ENCABEZADO PRINCIPAL -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- LOGO Y TITULO -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+                    <div class="bg-sky-500 text-white p-2.5 rounded-xl shadow-lg shadow-sky-500/30 flex items-center justify-center">
+                        <i class="fa-solid fa-laptop-code text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight sm:text-xl tracking-tight">Control de Mantenimiento</h1>
+                        <p class="text-xs text-slate-400 hidden sm:block">Gestión de Notebooks - Carros A, B y C</p>
+                    </div>
+                </div>
+
+                <!-- ACCIONES GLOBALES -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- Botón Exportar Todo a Excel -->
+                    <button onclick="exportConsolidatedToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 shadow-sm hover:shadow active:scale-95">
+                        <i class="fa-solid fa-file-excel text-base"></i>
+                        <span class="hidden md:inline font-semibold">Exportar Todo (Excel)</span>
+                        <span class="md:hidden font-semibold">Excel</span>
+                    </button>
+
+                    <!-- Menú de Ajustes / Restablecer -->
+                    <div class="relative inline-block text-left">
+                        <button onclick="toggleSettingsMenu()" id="settingsBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white p-2.5 rounded-xl transition-colors border border-slate-700">
+                            <i class="fa-solid fa-ellipsis-vertical text-base w-5 text-center"></i>
+                        </button>
+                        <div id="settingsDropdown" class="hidden origin-top-right absolute right-0 mt-2 w-56 rounded-2xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 divide-y divide-slate-100 focus:outline-none z-50 overflow-hidden text-slate-700">
+                            <div class="py-1">
+                                <a href="#" onclick="loadSampleData(); toggleSettingsMenu(); return false;" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm text-slate-700 hover:bg-slate-50">
+                                    <i class="fa-solid fa-database mr-3 text-sky-500"></i>
+                                    Cargar Datos de Prueba
+                                </a>
+                                <a href="#" onclick="confirmResetAll(); toggleSettingsMenu(); return false;" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm text-rose-600 hover:bg-rose-50">
+                                    <i class="fa-solid fa-trash-arrow-up mr-3 text-rose-500 group-hover:text-rose-700"></i>
+                                    Resetear Todos los Datos
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestañas de Navegación por Carro -->
+        <div class="bg-slate-800 border-t border-slate-700/60 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto flex space-x-1 sm:space-x-3 overflow-x-auto py-2.5 no-scrollbar" id="cartTabs">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl flex items-center space-x-2 whitespace-nowrap transition-all bg-sky-600 text-white shadow-sm">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Vista General</span>
+                </button>
+                <button onclick="switchTab('A')" id="tab-A" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-700/70 hover:text-white flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                    <span>CARRO A</span>
+                    <span id="tab-badge-A" class="ml-1 px-2 py-0.5 text-[10px] bg-slate-700 text-slate-300 rounded-full font-bold">0/30</span>
+                </button>
+                <button onclick="switchTab('B')" id="tab-B" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-700/70 hover:text-white flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                    <span>CARRO B</span>
+                    <span id="tab-badge-B" class="ml-1 px-2 py-0.5 text-[10px] bg-slate-700 text-slate-300 rounded-full font-bold">0/30</span>
+                </button>
+                <button onclick="switchTab('C')" id="tab-C" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-700/70 hover:text-white flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                    <span>CARRO C</span>
+                    <span id="tab-badge-C" class="ml-1 px-2 py-0.5 text-[10px] bg-slate-700 text-slate-300 rounded-full font-bold">0/30</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- ==================== VISTA GENERAL (DASHBOARD) ==================== -->
+        <div id="view-dashboard" class="space-y-6">
+            <!-- Resumen Global KPIs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Total Notebooks -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Equipos</p>
+                        <h3 class="text-2xl font-extrabold text-slate-800 mt-1">90 <span class="text-xs font-normal text-slate-500">(3 Carros)</span></h3>
+                    </div>
+                    <div class="bg-blue-50 text-blue-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-laptop text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- Completadas Global -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Mantenimiento OK</p>
+                        <h3 class="text-2xl font-extrabold text-emerald-600 mt-1" id="kpi-completed">0 / 90</h3>
+                    </div>
+                    <div class="bg-emerald-50 text-emerald-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-circle-check text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- Pendientes Global -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pendientes</p>
+                        <h3 class="text-2xl font-extrabold text-amber-500 mt-1" id="kpi-pending">90</h3>
+                    </div>
+                    <div class="bg-amber-50 text-amber-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- En Service Global -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">En Service</p>
+                        <h3 class="text-2xl font-extrabold text-purple-600 mt-1" id="kpi-service">0</h3>
+                    </div>
+                    <div class="bg-purple-50 text-purple-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-screwdriver-wrench text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progreso por Carros (Carro A, Carro B, Carro C) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Estado por Carro de Notebooks</h2>
+                        <p class="text-xs text-slate-500">Haz clic en cualquier carro para gestionar el mantenimiento individual de sus 30 equipos</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="dashboard-carts-container">
+                    <!-- Dinámico vía JS -->
+                </div>
+            </div>
+
+            <!-- Resumen de Tareas Realizadas Frecuentes -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
+                <h3 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-sky-600"></i>
+                    Cobertura de Tareas de Mantenimiento Preventivo
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4" id="tasks-summary-container">
+                    <!-- Dinámico vía JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== VISTA DETALLE DE CARRO ==================== -->
+        <div id="view-cart" class="hidden space-y-6">
+
+            <!-- Banner de Cabecera del Carro -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center space-x-3">
+                        <span class="p-3 bg-sky-100 text-sky-700 rounded-2xl font-bold text-xl shadow-sm">
+                            <i class="fa-solid fa-truck-ramp-box"></i>
+                        </span>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800" id="cart-title">CARRO A</h2>
+                            <p class="text-xs text-slate-500">Gestión de 30 Notebooks (#1 al #30)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progreso del Carro Activo -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 min-w-[300px]">
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-slate-600">Progreso de Mantenimiento</span>
+                            <span class="text-sky-600" id="cart-progress-text">0 / 30 (0%)</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                            <div id="cart-progress-bar" class="bg-sky-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acciones del Carro -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="exportCurrentCartToExcel()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-2 rounded-xl transition border border-emerald-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-excel"></i>
+                        Exportar Carro
+                    </button>
+                    <button onclick="markAllCurrentCart(true)" class="bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-semibold px-3 py-2 rounded-xl transition border border-sky-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-check-double"></i>
+                        Marcar Todas OK
+                    </button>
+                    <button onclick="markAllCurrentCart(false)" class="bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-2 rounded-xl transition border border-amber-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        Desmarcar Todas
+                    </button>
+                    <button onclick="confirmResetCart()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold px-3 py-2 rounded-xl transition border border-rose-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-trash"></i>
+                        Resetear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Barra de Filtros y Búsqueda -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                <!-- Filtros por Estado -->
+                <div class="flex flex-wrap items-center bg-slate-100 p-1 rounded-2xl w-full md:w-auto gap-1">
+                    <button onclick="setFilter('all')" id="filter-all" class="filter-btn flex-1 md:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-xl transition text-slate-700 bg-white shadow-sm">
+                        Todas (<span id="count-all">30</span>)
+                    </button>
+                    <button onclick="setFilter('completed')" id="filter-completed" class="filter-btn flex-1 md:flex-none px-3.5 py-1.5 text-xs font-medium rounded-xl transition text-slate-600 hover:text-slate-900">
+                        Completadas (<span id="count-completed">0</span>)
+                    </button>
+                    <button onclick="setFilter('pending')" id="filter-pending" class="filter-btn flex-1 md:flex-none px-3.5 py-1.5 text-xs font-medium rounded-xl transition text-slate-600 hover:text-slate-900">
+                        Pendientes (<span id="count-pending">30</span>)
+                    </button>
+                    <button onclick="setFilter('service')" id="filter-service" class="filter-btn flex-1 md:flex-none px-3.5 py-1.5 text-xs font-medium rounded-xl transition text-slate-600 hover:text-slate-900">
+                        En Service (<span id="count-service">0</span>)
+                    </button>
+                </div>
+
+                <!-- Buscador por número o notas -->
+                <div class="relative w-full md:w-72">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar PC (ej. PC-05, pantalla, cargador)..." class="w-full text-xs pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all">
+                </div>
+            </div>
+
+            <!-- Grilla de las 30 PCs del Carro -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="pcs-grid">
+                <!-- Renderizado dinámico de tarjetas PC -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- NOTIFICACIONES TOAST -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- MODAL DE CONFIRMACIÓN PERSONALIZADO -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="flex items-center space-x-3 text-amber-500 mb-3">
+                <div class="p-3 bg-amber-100 text-amber-600 rounded-2xl">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800" id="modalTitle">Confirmar Acción</h3>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-600 mb-6" id="modalMessage">¿Estás seguro de que deseas realizar esta acción?</p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeConfirmModal(false)" class="px-4 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+                    Cancelar
+                </button>
+                <button id="modalConfirmBtn" onclick="closeConfirmModal(true)" class="px-4 py-2.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition">
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONSTANTES Y CONFIGURACIÓN INICIAL
+        const CARTS = ['A', 'B', 'C'];
+        const PCS_PER_CART = 30;
+        const STORAGE_KEY = 'notebook_carts_maintenance_v2';
+
+        // Tareas predefinidas de mantenimiento
+        const TASK_DEFINITIONS = [
+            { id: 'limpieza', label: 'Limpieza física' },
+            { id: 'so', label: 'Actualización S.O.' },
+            { id: 'antivirus', label: 'Antivirus / Seguridad' },
+            { id: 'bateria', label: 'Batería y Cargador' },
+            { id: 'hardware', label: 'Teclado / Pantalla' }
+        ];
+
+        // Estado Global
+        let appData = {
+            carts: {},
+            lastUpdated: new Date().toISOString()
+        };
+
+        let currentTab = 'dashboard'; // 'dashboard', 'A', 'B', 'C'
+        let currentFilter = 'all'; // 'all', 'completed', 'pending', 'service'
+        let searchQuery = '';
+        let modalCallback = null;
+
+        // Inicialización
+        window.onload = function() {
+            loadFromLocalStorage();
+            updateUI();
+        };
+
+        // Genera la estructura vacía con Carro A, Carro B, Carro C
+        function generateDefaultData() {
+            const carts = {};
+            CARTS.forEach(cartKey => {
+                carts[cartKey] = [];
+                for (let i = 1; i <= PCS_PER_CART; i++) {
+                    const pcNum = i < 10 ? `0${i}` : `${i}`;
+                    carts[cartKey].push({
+                        id: i,
+                        code: `PC-${pcNum}`,
+                        status: 'pending', // 'completed', 'pending', 'service'
+                        date: '',
+                        tasks: {
+                            limpieza: false,
+                            so: false,
+                            antivirus: false,
+                            bateria: false,
+                            hardware: false
+                        },
+                        notes: ''
+                    });
+                }
+            });
+            return {
+                carts: carts,
+                lastUpdated: new Date().toISOString()
+            };
+        }
+
+        // Carga de LocalStorage
+        function loadFromLocalStorage() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    appData = JSON.parse(stored);
+                    
+                    // Migración / Asegurar estructura de datos correcta
+                    CARTS.forEach(cartKey => {
+                        if (!appData.carts[cartKey]) {
+                            appData.carts[cartKey] = [];
+                        }
+                        // Validar campos de cada PC
+                        appData.carts[cartKey].forEach(pc => {
+                            if (!pc.status) {
+                                pc.status = pc.completed ? 'completed' : 'pending';
+                            }
+                            if (!pc.tasks) {
+                                pc.tasks = { limpieza: false, so: false, antivirus: false, bateria: false, hardware: false };
+                            }
+                        });
+                    });
+                } else {
+                    appData = generateDefaultData();
+                    saveToLocalStorage();
+                }
+            } catch (e) {
+                console.error("Error al cargar localStorage:", e);
+                appData = generateDefaultData();
+            }
+        }
+
+        // Guardado en LocalStorage
+        function saveToLocalStorage() {
+            try {
+                appData.lastUpdated = new Date().toISOString();
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            } catch (e) {
+                showToast("Error al guardar en el navegador", "error");
+            }
+        }
+
+        // NAVEGACIÓN Y PESTAÑAS
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Actualizar botones de pestaña
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-700/70 hover:text-white flex items-center space-x-2 whitespace-nowrap transition-all";
+            });
+
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl flex items-center space-x-2 whitespace-nowrap transition-all bg-sky-600 text-white shadow-sm";
+            }
+
+            // Alternar Vistas
+            if (tab === 'dashboard') {
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                document.getElementById('view-cart').classList.add('hidden');
+            } else {
+                document.getElementById('view-dashboard').classList.add('hidden');
+                document.getElementById('view-cart').classList.remove('hidden');
+            }
+
+            updateUI();
+        }
+
+        // ACTUALIZACIÓN COMPLETA DE INTERFAZ
+        function updateUI() {
+            updateTabBadges();
+            
+            if (currentTab === 'dashboard') {
+                renderDashboard();
+            } else {
+                renderCartView(currentTab);
+            }
+        }
+
+        // Actualizar insignias de recuento en las pestañas
+        function updateTabBadges() {
+            CARTS.forEach(cartKey => {
+                const pcs = appData.carts[cartKey] || [];
+                const completedCount = pcs.filter(pc => pc.status === 'completed').length;
+                const serviceCount = pcs.filter(pc => pc.status === 'service').length;
+                const badge = document.getElementById(`tab-badge-${cartKey}`);
+
+                if (badge) {
+                    badge.innerText = `${completedCount}/30`;
+                    if (serviceCount > 0) {
+                        badge.className = "ml-1 px-2 py-0.5 text-[10px] bg-purple-500 text-white font-bold rounded-full";
+                    } else if (completedCount === 30) {
+                        badge.className = "ml-1 px-2 py-0.5 text-[10px] bg-emerald-500 text-white font-bold rounded-full";
+                    } else if (completedCount > 0) {
+                        badge.className = "ml-1 px-2 py-0.5 text-[10px] bg-sky-500 text-white font-bold rounded-full";
+                    } else {
+                        badge.className = "ml-1 px-2 py-0.5 text-[10px] bg-slate-700 text-slate-300 rounded-full font-bold";
+                    }
+                }
+            });
+        }
+
+        // RENDERIZAR VISTA GENERAL (DASHBOARD)
+        function renderDashboard() {
+            let totalCompleted = 0;
+            let totalPending = 0;
+            let totalService = 0;
+            let totalEquipos = CARTS.length * PCS_PER_CART;
+
+            CARTS.forEach(cartKey => {
+                const pcs = appData.carts[cartKey] || [];
+                pcs.forEach(pc => {
+                    if (pc.status === 'completed') totalCompleted++;
+                    else if (pc.status === 'service') totalService++;
+                    else totalPending++;
+                });
+            });
+
+            // Actualizar KPIs Globales
+            document.getElementById('kpi-completed').innerText = `${totalCompleted} / ${totalEquipos}`;
+            document.getElementById('kpi-pending').innerText = `${totalPending}`;
+            document.getElementById('kpi-service').innerText = `${totalService}`;
+
+            // Tarjetas de CARRO A, CARRO B, CARRO C
+            const cartContainer = document.getElementById('dashboard-carts-container');
+            cartContainer.innerHTML = '';
+
+            CARTS.forEach(cartKey => {
+                const pcs = appData.carts[cartKey] || [];
+                const completed = pcs.filter(pc => pc.status === 'completed').length;
+                const service = pcs.filter(pc => pc.status === 'service').length;
+                const pending = pcs.filter(pc => pc.status === 'pending').length;
+                const cartPct = Math.round((completed / PCS_PER_CART) * 100);
+
+                const cardHtml = `
+                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 hover:border-sky-300 hover:shadow-md transition cursor-pointer flex flex-col justify-between" onclick="switchTab('${cartKey}')">
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="font-extrabold text-slate-800 text-lg flex items-center gap-2">
+                                    <i class="fa-solid fa-truck-ramp-box text-sky-600"></i> CARRO ${cartKey}
+                                </span>
+                                <span class="px-2.5 py-1 text-xs font-extrabold rounded-full ${cartPct === 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800'}">
+                                    ${cartPct}% OK
+                                </span>
+                            </div>
+
+                            <p class="text-xs text-slate-500 mb-4">30 Notebooks numeradas (#01 al #30)</p>
+
+                            <!-- Barra de progreso -->
+                            <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden mb-4">
+                                <div class="h-3 rounded-full transition-all duration-500 ${cartPct === 100 ? 'bg-emerald-500' : 'bg-sky-600'}" style="width: ${cartPct}%"></div>
+                            </div>
+
+                            <!-- Métricas de estado del carro -->
+                            <div class="grid grid-cols-3 gap-2 text-center text-xs mb-2">
+                                <div class="bg-emerald-50 p-2 rounded-xl border border-emerald-100">
+                                    <span class="block font-bold text-emerald-700">${completed}</span>
+                                    <span class="text-[10px] text-emerald-600 font-medium">OK</span>
+                                </div>
+                                <div class="bg-amber-50 p-2 rounded-xl border border-amber-100">
+                                    <span class="block font-bold text-amber-700">${pending}</span>
+                                    <span class="text-[10px] text-amber-600 font-medium">Pendiente</span>
+                                </div>
+                                <div class="bg-purple-50 p-2 rounded-xl border border-purple-100">
+                                    <span class="block font-bold text-purple-700">${service}</span>
+                                    <span class="text-[10px] text-purple-600 font-medium">En Service</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-200 mt-2">
+                            <span>Mantenimiento: <strong class="${cartPct === 100 ? 'text-emerald-600' : 'text-slate-700'}">${completed}/30 completadas</strong></span>
+                            <span class="text-sky-600 font-semibold flex items-center gap-1">
+                                Ver Detalle <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+                    </div>
+                `;
+                cartContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            renderTaskSummary();
+        }
+
+        // Cobertura por tarea preventiva
+        function renderTaskSummary() {
+            const summaryContainer = document.getElementById('tasks-summary-container');
+            summaryContainer.innerHTML = '';
+
+            TASK_DEFINITIONS.forEach(task => {
+                let taskCompletedCount = 0;
+                let totalPCs = CARTS.length * PCS_PER_CART;
+
+                CARTS.forEach(cartKey => {
+                    appData.carts[cartKey].forEach(pc => {
+                        if (pc.tasks && pc.tasks[task.id]) taskCompletedCount++;
+                    });
+                });
+
+                const taskPct = Math.round((taskCompletedCount / totalPCs) * 100);
+
+                const itemHtml = `
+                    <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex flex-col justify-between">
+                        <div class="flex items-center gap-2 mb-2 text-slate-700">
+                            <i class="fa-solid fa-check text-sky-600 text-xs"></i>
+                            <span class="text-xs font-semibold leading-tight">${task.label}</span>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-slate-500 font-medium mb-1">
+                                <span>${taskCompletedCount} PCs</span>
+                                <span>${taskPct}%</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-sky-500 h-1.5 rounded-full" style="width: ${taskPct}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                summaryContainer.insertAdjacentHTML('beforeend', itemHtml);
+            });
+        }
+
+        // RENDERIZAR DETALLE DE UN CARRO
+        function renderCartView(cartKey) {
+            const pcs = appData.carts[cartKey] || [];
+            
+            // Título y Progreso del Carro Activo
+            document.getElementById('cart-title').innerText = `CARRO ${cartKey}`;
+            const completedCount = pcs.filter(pc => pc.status === 'completed').length;
+            const pendingCount = pcs.filter(pc => pc.status === 'pending').length;
+            const serviceCount = pcs.filter(pc => pc.status === 'service').length;
+            const pct = Math.round((completedCount / PCS_PER_CART) * 100);
+
+            document.getElementById('cart-progress-text').innerText = `${completedCount} / 30 (${pct}%)`;
+            document.getElementById('cart-progress-bar').style.width = `${pct}%`;
+            document.getElementById('cart-progress-bar').className = `h-2.5 rounded-full transition-all duration-300 ${pct === 100 ? 'bg-emerald-500' : 'bg-sky-600'}`;
+
+            // Actualizar contadores de los filtros
+            document.getElementById('count-all').innerText = pcs.length;
+            document.getElementById('count-completed').innerText = completedCount;
+            document.getElementById('count-pending').innerText = pendingCount;
+            document.getElementById('count-service').innerText = serviceCount;
+
+            // Filtrado de PCs
+            let filtered = pcs.filter(pc => {
+                if (currentFilter === 'completed' && pc.status !== 'completed') return false;
+                if (currentFilter === 'pending' && pc.status !== 'pending') return false;
+                if (currentFilter === 'service' && pc.status !== 'service') return false;
+
+                if (searchQuery.trim() !== '') {
+                    const q = searchQuery.toLowerCase();
+                    const matchCode = pc.code.toLowerCase().includes(q);
+                    const matchNotes = (pc.notes || '').toLowerCase().includes(q);
+                    return matchCode || matchNotes;
+                }
+
+                return true;
+            });
+
+            // Grid de tarjetas de PCs
+            const pcsGrid = document.getElementById('pcs-grid');
+            pcsGrid.innerHTML = '';
+
+            if (filtered.length === 0) {
+                pcsGrid.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
+                        <i class="fa-solid fa-laptop-medical text-4xl mb-2 text-slate-300"></i>
+                        <p class="text-sm font-medium">No se encontraron equipos con los filtros seleccionados.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(pc => {
+                const card = createPCCard(cartKey, pc);
+                pcsGrid.appendChild(card);
+            });
+        }
+
+        // Crear elemento de tarjeta individual de la PC
+        function createPCCard(cartKey, pc) {
+            const div = document.createElement('div');
+            
+            // Clases dinámicas según el estado
+            let borderClass = 'border-slate-200';
+            let statusBadge = '';
+
+            if (pc.status === 'completed') {
+                borderClass = 'border-emerald-300 bg-emerald-50/10 shadow-sm';
+                statusBadge = `
+                    <span class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Mantenimiento OK
+                    </span>
+                `;
+            } else if (pc.status === 'service') {
+                borderClass = 'border-purple-300 bg-purple-50/20 shadow-sm';
+                statusBadge = `
+                    <span class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-purple-100 text-purple-800">
+                        <i class="fa-solid fa-screwdriver-wrench text-[10px]"></i>
+                        En Service
+                    </span>
+                `;
+            } else {
+                statusBadge = `
+                    <span class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        Pendiente
+                    </span>
+                `;
+            }
+
+            // Checklist de tareas
+            let tasksHtml = '';
+            TASK_DEFINITIONS.forEach(t => {
+                const isChecked = pc.tasks && pc.tasks[t.id];
+                tasksHtml += `
+                    <label class="flex items-center space-x-2 text-xs text-slate-600 cursor-pointer hover:text-slate-900 select-none">
+                        <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="togglePCTask('${cartKey}', ${pc.id}, '${t.id}', this.checked)" class="rounded text-sky-600 focus:ring-sky-500 h-3.5 w-3.5 border-slate-300">
+                        <span>${t.label}</span>
+                    </label>
+                `;
+            });
+
+            const dateValue = pc.date || '';
+
+            div.className = `bg-white rounded-2xl border ${borderClass} p-4 transition-all duration-200 hover:shadow-md flex flex-col justify-between`;
+
+            div.innerHTML = `
+                <div>
+                    <!-- Header Card -->
+                    <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100">
+                        <div class="flex items-center space-x-2.5">
+                            <span class="p-2.5 ${pc.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : (pc.status === 'service' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600')} rounded-xl font-extrabold text-xs">
+                                <i class="fa-solid fa-laptop"></i>
+                            </span>
+                            <span class="font-extrabold text-slate-800 text-base">${pc.code}</span>
+                        </div>
+
+                        <!-- Botón para alternar "En Service" -->
+                        <button onclick="toggleServiceStatus('${cartKey}', ${pc.id})" title="Marcar/Desmarcar En Service" class="px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all flex items-center space-x-1.5 ${pc.status === 'service' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-slate-100 hover:bg-purple-50 text-slate-600 hover:text-purple-700 border-slate-200'}">
+                            <i class="fa-solid fa-screwdriver-wrench text-[11px]"></i>
+                            <span>${pc.status === 'service' ? 'En Service' : 'Service'}</span>
+                        </button>
+                    </div>
+
+                    <!-- Insignia de Estado y Switch Mantenimiento -->
+                    <div class="mb-3 flex items-center justify-between gap-2 flex-wrap">
+                        ${statusBadge}
+
+                        <!-- Check / Switch de Mantenimiento Completado -->
+                        <label class="inline-flex items-center cursor-pointer space-x-2 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200 hover:bg-slate-100 transition">
+                            <input type="checkbox" ${pc.status === 'completed' ? 'checked' : ''} onchange="togglePCCompleted('${cartKey}', ${pc.id}, this.checked)" class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4 border-slate-300">
+                            <span class="text-xs font-bold text-slate-700 select-none">Mantenimiento OK</span>
+                        </label>
+                    </div>
+
+                    <!-- Fecha de Mantenimiento -->
+                    <div class="mb-3 flex items-center justify-between bg-slate-50/80 p-2 rounded-xl border border-slate-100">
+                        <span class="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                            <i class="fa-regular fa-calendar-check text-slate-400"></i> Fecha:
+                        </span>
+                        <input type="date" value="${dateValue}" onchange="updatePCDate('${cartKey}', ${pc.id}, this.value)" class="text-xs text-slate-700 font-medium bg-white border border-slate-200 rounded-lg px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-sky-500">
+                    </div>
+
+                    <!-- Checklist de Mantenimiento Preventivo -->
+                    <div class="bg-slate-50/70 rounded-xl p-3 mb-3 border border-slate-100 space-y-2">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Checklist Preventivo</p>
+                        <div class="grid grid-cols-1 gap-1.5">
+                            ${tasksHtml}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campo Observaciones -->
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Observaciones / Novedades</p>
+                    <textarea placeholder="Ej: Cambio de disco SSD, teclado OK, falla de batería..." onchange="updatePCNotes('${cartKey}', ${pc.id}, this.value)" rows="2" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all resize-none">${pc.notes || ''}</textarea>
+                </div>
+            `;
+
+            return div;
+        }
+
+        // Cambiar estado "Mantenimiento OK"
+        function togglePCCompleted(cartKey, pcId, isChecked) {
+            const pc = appData.carts[cartKey].find(p => p.id === pcId);
+            if (!pc) return;
+
+            if (isChecked) {
+                pc.status = 'completed';
+                if (!pc.date) {
+                    pc.date = new Date().toISOString().split('T')[0];
+                }
+                // Marcar todas las tareas preventivas como completadas
+                TASK_DEFINITIONS.forEach(t => pc.tasks[t.id] = true);
+            } else {
+                pc.status = 'pending';
+            }
+
+            saveToLocalStorage();
+            updateUI();
+            showToast(`${pc.code} (${cartKey}) marcado como ${isChecked ? 'Mantenimiento OK' : 'Pendiente'}`, isChecked ? 'success' : 'info');
+        }
+
+        // Alternar el estado "En Service"
+        function toggleServiceStatus(cartKey, pcId) {
+            const pc = appData.carts[cartKey].find(p => p.id === pcId);
+            if (!pc) return;
+
+            if (pc.status === 'service') {
+                pc.status = 'pending';
+                showToast(`${pc.code} reingresado a Pendiente`, 'info');
+            } else {
+                pc.status = 'service';
+                showToast(`${pc.code} derivado a Servicio Técnico (En Service)`, 'info');
+            }
+
+            saveToLocalStorage();
+            updateUI();
+        }
+
+        // Tildar/Destildar tarea individual del checklist
+        function togglePCTask(cartKey, pcId, taskId, isChecked) {
+            const pc = appData.carts[cartKey].find(p => p.id === pcId);
+            if (!pc) return;
+
+            if (!pc.tasks) pc.tasks = {};
+            pc.tasks[taskId] = isChecked;
+
+            // Si se marcan todas las tareas y no estaba completado, marcar automáticamente
+            const allChecked = TASK_DEFINITIONS.every(t => pc.tasks[t.id]);
+            if (allChecked && pc.status !== 'completed') {
+                pc.status = 'completed';
+                if (!pc.date) pc.date = new Date().toISOString().split('T')[0];
+            }
+
+            saveToLocalStorage();
+            updateTabBadges();
+            if (currentTab === 'dashboard') renderDashboard();
+        }
+
+        // Actualizar Fecha
+        function updatePCDate(cartKey, pcId, dateStr) {
+            const pc = appData.carts[cartKey].find(p => p.id === pcId);
+            if (!pc) return;
+
+            pc.date = dateStr;
+            saveToLocalStorage();
+        }
+
+        // Actualizar Notas
+        function updatePCNotes(cartKey, pcId, notesStr) {
+            const pc = appData.carts[cartKey].find(p => p.id === pcId);
+            if (!pc) return;
+
+            pc.notes = notesStr;
+            saveToLocalStorage();
+        }
+
+        // Filtros
+        function setFilter(filterType) {
+            currentFilter = filterType;
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = "filter-btn flex-1 md:flex-none px-3.5 py-1.5 text-xs font-medium rounded-xl transition text-slate-600 hover:text-slate-900";
+            });
+
+            const activeBtn = document.getElementById(`filter-${filterType}`);
+            if (activeBtn) {
+                activeBtn.className = "filter-btn flex-1 md:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-xl transition text-slate-700 bg-white shadow-sm";
+            }
+
+            renderCartView(currentTab);
+        }
+
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value;
+            renderCartView(currentTab);
+        }
+
+        // Acciones Masivas por Carro
+        function markAllCurrentCart(completed) {
+            if (currentTab === 'dashboard') return;
+            
+            const cartKey = currentTab;
+            const today = new Date().toISOString().split('T')[0];
+
+            appData.carts[cartKey].forEach(pc => {
+                if (completed) {
+                    pc.status = 'completed';
+                    if (!pc.date) pc.date = today;
+                    TASK_DEFINITIONS.forEach(t => pc.tasks[t.id] = true);
+                } else {
+                    pc.status = 'pending';
+                }
+            });
+
+            saveToLocalStorage();
+            updateUI();
+            showToast(`Todas las PCs del Carro ${cartKey} marcadas como ${completed ? 'Completadas' : 'Pendientes'}`, 'success');
+        }
+
+        function confirmResetCart() {
+            if (currentTab === 'dashboard') return;
+            const cartKey = currentTab;
+
+            openConfirmModal(
+                `Resetear CARRO ${cartKey}`,
+                `¿Estás seguro de que deseas reiniciar el CARRO ${cartKey}? Se borrarán las fechas, notas y estados de mantenimiento.`,
+                function() {
+                    appData.carts[cartKey].forEach(pc => {
+                        pc.status = 'pending';
+                        pc.date = '';
+                        pc.notes = '';
+                        TASK_DEFINITIONS.forEach(t => pc.tasks[t.id] = false);
+                    });
+                    saveToLocalStorage();
+                    updateUI();
+                    showToast(`CARRO ${cartKey} restablecido correctamente`, 'info');
+                }
+            );
+        }
+
+        function confirmResetAll() {
+            openConfirmModal(
+                `Restablecer Todos los Carros`,
+                `¿Deseas reiniciar completamente el estado de los Carros A, B y C? Se borrará todo el progreso registrado.`,
+                function() {
+                    appData = generateDefaultData();
+                    saveToLocalStorage();
+                    updateUI();
+                    showToast(`Todos los carros han sido reiniciados`, 'info');
+                }
+            );
+        }
+
+        // Cargar Datos de Prueba
+        function loadSampleData() {
+            openConfirmModal(
+                `Cargar Datos de Prueba`,
+                `Se cargarán datos de demostración con diferentes estados (OK, Pendiente, En Service) en los Carros A, B y C.`,
+                function() {
+                    const sampleNotes = [
+                        'Mantenimiento regular OK.',
+                        'Pantalla limpia, SO actualizado.',
+                        'Derivado por teclado que no responde.',
+                        'Cambio de batería solicitado.',
+                        'Cargador nuevo provisto.',
+                        'En revisión técnica por falla en disco.',
+                        ''
+                    ];
+
+                    const today = new Date().toISOString().split('T')[0];
+
+                    CARTS.forEach((cartKey, cIdx) => {
+                        appData.carts[cartKey].forEach((pc, idx) => {
+                            if ((idx + cIdx) % 7 === 0) {
+                                pc.status = 'service';
+                                pc.date = '';
+                                pc.notes = sampleNotes[2];
+                            } else if ((idx + cIdx) % 3 !== 0) {
+                                pc.status = 'completed';
+                                pc.date = today;
+                                pc.notes = sampleNotes[idx % sampleNotes.length];
+                                TASK_DEFINITIONS.forEach(t => pc.tasks[t.id] = true);
+                            } else {
+                                pc.status = 'pending';
+                                pc.date = '';
+                                pc.notes = '';
+                                TASK_DEFINITIONS.forEach(t => pc.tasks[t.id] = false);
+                            }
+                        });
+                    });
+
+                    saveToLocalStorage();
+                    updateUI();
+                    showToast(`Datos de prueba cargados correctamente`, 'success');
+                }
+            );
+        }
+
+        // EXPORTACIÓN A EXCEL (.XLSX)
+        function exportConsolidatedToExcel() {
+            try {
+                const rows = [];
+
+                CARTS.forEach(cartKey => {
+                    appData.carts[cartKey].forEach(pc => {
+                        const completedTasks = TASK_DEFINITIONS
+                            .filter(t => pc.tasks && pc.tasks[t.id])
+                            .map(t => t.label)
+                            .join(', ');
+
+                        let statusLabel = 'PENDIENTE';
+                        if (pc.status === 'completed') statusLabel = 'COMPLETADO (OK)';
+                        else if (pc.status === 'service') statusLabel = 'EN SERVICE';
+
+                        rows.push({
+                            'Carro': `Carro ${cartKey}`,
+                            'N° de PC': pc.code,
+                            'Estado': statusLabel,
+                            'Fecha Mantenimiento': pc.date || '-',
+                            'Tareas Preventivas': completedTasks || 'Ninguna',
+                            'Observaciones': pc.notes || '-'
+                        });
+                    });
+                });
+
+                const worksheet = XLSX.utils.json_to_sheet(rows);
+
+                worksheet['!cols'] = [
+                    { wch: 12 }, // Carro
+                    { wch: 12 }, // N° PC
+                    { wch: 18 }, // Estado
+                    { wch: 22 }, // Fecha
+                    { wch: 45 }, // Tareas
+                    { wch: 35 }  // Observaciones
+                ];
+
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Mantenimiento General");
+
+                const fechaStr = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(workbook, `Reporte_Mantenimiento_Carros_A_B_C_${fechaStr}.xlsx`);
+
+                showToast("Reporte Excel consolidado exportado", "success");
+            } catch (e) {
+                console.error("Error al exportar a Excel:", e);
+                showToast("Error al generar el archivo Excel", "error");
+            }
+        }
+
+        function exportCurrentCartToExcel() {
+            if (currentTab === 'dashboard') return;
+            const cartKey = currentTab;
+
+            try {
+                const rows = appData.carts[cartKey].map(pc => {
+                    const completedTasks = TASK_DEFINITIONS
+                        .filter(t => pc.tasks && pc.tasks[t.id])
+                        .map(t => t.label)
+                        .join(', ');
+
+                    let statusLabel = 'PENDIENTE';
+                    if (pc.status === 'completed') statusLabel = 'COMPLETADO (OK)';
+                    else if (pc.status === 'service') statusLabel = 'EN SERVICE';
+
+                    return {
+                        'Carro': `Carro ${cartKey}`,
+                        'N° de PC': pc.code,
+                        'Estado': statusLabel,
+                        'Fecha Mantenimiento': pc.date || '-',
+                        'Tareas Preventivas': completedTasks || 'Ninguna',
+                        'Observaciones': pc.notes || '-'
+                    };
+                });
+
+                const worksheet = XLSX.utils.json_to_sheet(rows);
+                worksheet['!cols'] = [
+                    { wch: 12 },
+                    { wch: 12 },
+                    { wch: 18 },
+                    { wch: 22 },
+                    { wch: 45 },
+                    { wch: 35 }
+                ];
+
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, `CARRO ${cartKey}`);
+
+                const fechaStr = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(workbook, `Reporte_Carro_${cartKey}_${fechaStr}.xlsx`);
+
+                showToast(`Reporte de CARRO ${cartKey} exportado`, "success");
+            } catch (e) {
+                console.error("Error al exportar a Excel:", e);
+                showToast("Error al generar el archivo Excel", "error");
+            }
+        }
+
+        // Menú desplegable
+        function toggleSettingsMenu() {
+            const dropdown = document.getElementById('settingsDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        window.addEventListener('click', function(e) {
+            const btn = document.getElementById('settingsBtn');
+            const dropdown = document.getElementById('settingsDropdown');
+            if (btn && dropdown && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Modal de Confirmación
+        function openConfirmModal(title, message, callback) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            modalCallback = callback;
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal(confirmed) {
+            document.getElementById('confirmModal').classList.add('hidden');
+            if (confirmed && typeof modalCallback === 'function') {
+                modalCallback();
+            }
+            modalCallback = null;
+        }
+
+        // Notificaciones Toast
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-800 text-white';
+            let iconClass = 'fa-info-circle text-sky-400';
+
+            if (type === 'success') {
+                bgClass = 'bg-emerald-800 text-white';
+                iconClass = 'fa-circle-check text-emerald-300';
+            } else if (type === 'error') {
+                bgClass = 'bg-rose-800 text-white';
+                iconClass = 'fa-circle-xmark text-rose-300';
+            }
+
+            toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-2xl shadow-xl ${bgClass} text-xs font-semibold transform transition-all duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `
+                <i class="fa-solid ${iconClass} text-base"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
