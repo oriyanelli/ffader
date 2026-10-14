@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Mantenimiento - Carros A, B y C</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SheetJS para exportación a Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- Typography Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Hoja de Estilos Personalizada -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- SDKs Compatibles de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <!-- Lógica JavaScript Principal -->
+    <script src="app.js" defer></script>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-800 bg-slate-50 antialiased">
+
+    <!-- ENCABEZADO PRINCIPAL -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- LOGO Y TITULO -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+                    <div class="bg-sky-500 text-white p-2.5 rounded-xl shadow-lg shadow-sky-500/30 flex items-center justify-center">
+                        <i class="fa-solid fa-laptop-code text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight sm:text-xl tracking-tight">Control de Mantenimiento</h1>
+                        <p class="text-xs text-slate-400 hidden sm:block">Gestión de Notebooks - Carros A, B y C</p>
+                    </div>
+                </div>
+
+                <!-- ACCIONES GLOBALES -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- Estado de Conexión Nube -->
+                    <div id="cloudStatus" class="hidden sm:flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="cloudStatusText">Nube Sincronizada</span>
+                    </div>
+
+                    <!-- Botón Exportar Todo a Excel -->
+                    <button onclick="exportConsolidatedToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium px-3.5 py-2 rounded-xl transition-all flex items-center space-x-2 shadow-sm hover:shadow active:scale-95">
+                        <i class="fa-solid fa-file-excel text-base"></i>
+                        <span class="hidden md:inline font-semibold">Exportar Todo (Excel)</span>
+                        <span class="md:hidden font-semibold">Excel</span>
+                    </button>
+
+                    <!-- Menú de Ajustes / Restablecer -->
+                    <div class="relative inline-block text-left">
+                        <button onclick="toggleSettingsMenu()" id="settingsBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white p-2.5 rounded-xl transition-colors border border-slate-700">
+                            <i class="fa-solid fa-ellipsis-vertical text-base w-5 text-center"></i>
+                        </button>
+                        <div id="settingsDropdown" class="hidden origin-top-right absolute right-0 mt-2 w-56 rounded-2xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 divide-y divide-slate-100 focus:outline-none z-50 overflow-hidden text-slate-700">
+                            <div class="py-1">
+                                <a href="#" onclick="loadSampleData(); toggleSettingsMenu(); return false;" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm text-slate-700 hover:bg-slate-50">
+                                    <i class="fa-solid fa-database mr-3 text-sky-500"></i>
+                                    Cargar Datos de Prueba
+                                </a>
+                                <a href="#" onclick="confirmResetAll(); toggleSettingsMenu(); return false;" class="group flex items-center px-4 py-2.5 text-xs sm:text-sm text-rose-600 hover:bg-rose-50">
+                                    <i class="fa-solid fa-trash-arrow-up mr-3 text-rose-500 group-hover:text-rose-700"></i>
+                                    Resetear Todos los Datos
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestañas de Navegación por Carro -->
+        <div class="bg-slate-800 border-t border-slate-700/60 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto flex space-x-1 sm:space-x-3 overflow-x-auto py-2.5 no-scrollbar" id="cartTabs">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl flex items-center space-x-2 whitespace-nowrap transition-all bg-sky-600 text-white shadow-sm">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Vista General</span>
+                </button>
+                <button onclick="switchTab('A')" id="tab-A" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-700/70 hover:text-white flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                    <span>CARRO A</span>
+                    <span id="tab-badge-A" class="ml-1 px-2 py-0.5 text-[10px] bg-slate-700 text-slate-300 rounded-full font-bold">0/30</span>
+                </button>
+                <button onclick="switchTab('B')" id="tab-B" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-700/70 hover:text-white flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                    <span>CARRO B</span>
+                    <span id="tab-badge-B" class="ml-1 px-2 py-0.5 text-[10px] bg-slate-700 text-slate-300 rounded-full font-bold">0/30</span>
+                </button>
+                <button onclick="switchTab('C')" id="tab-C" class="tab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-xl text-slate-300 hover:bg-slate-700/70 hover:text-white flex items-center space-x-2 whitespace-nowrap transition-all">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                    <span>CARRO C</span>
+                    <span id="tab-badge-C" class="ml-1 px-2 py-0.5 text-[10px] bg-slate-700 text-slate-300 rounded-full font-bold">0/30</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- ==================== VISTA GENERAL (DASHBOARD) ==================== -->
+        <div id="view-dashboard" class="space-y-6">
+            <!-- Resumen Global KPIs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Total Notebooks -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Equipos</p>
+                        <h3 class="text-2xl font-extrabold text-slate-800 mt-1">90 <span class="text-xs font-normal text-slate-500">(3 Carros)</span></h3>
+                    </div>
+                    <div class="bg-blue-50 text-blue-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-laptop text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- Completadas Global -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Mantenimiento OK</p>
+                        <h3 class="text-2xl font-extrabold text-emerald-600 mt-1" id="kpi-completed">0 / 90</h3>
+                    </div>
+                    <div class="bg-emerald-50 text-emerald-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-circle-check text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- Pendientes Global -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pendientes</p>
+                        <h3 class="text-2xl font-extrabold text-amber-500 mt-1" id="kpi-pending">90</h3>
+                    </div>
+                    <div class="bg-amber-50 text-amber-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- En Service Global -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">En Service</p>
+                        <h3 class="text-2xl font-extrabold text-purple-600 mt-1" id="kpi-service">0</h3>
+                    </div>
+                    <div class="bg-purple-50 text-purple-600 p-3.5 rounded-2xl">
+                        <i class="fa-solid fa-screwdriver-wrench text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progreso por Carros (Carro A, Carro B, Carro C) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Estado por Carro de Notebooks</h2>
+                        <p class="text-xs text-slate-500">Haz clic en cualquier carro para gestionar el mantenimiento individual de sus 30 equipos</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="dashboard-carts-container">
+                    <!-- Dinámico vía JS -->
+                </div>
+            </div>
+
+            <!-- Resumen de Tareas Realizadas Frecuentes -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
+                <h3 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-sky-600"></i>
+                    Cobertura de Tareas de Mantenimiento Preventivo
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4" id="tasks-summary-container">
+                    <!-- Dinámico vía JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== VISTA DETALLE DE CARRO ==================== -->
+        <div id="view-cart" class="hidden space-y-6">
+
+            <!-- Banner de Cabecera del Carro -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center space-x-3">
+                        <span class="p-3 bg-sky-100 text-sky-700 rounded-2xl font-bold text-xl shadow-sm">
+                            <i class="fa-solid fa-truck-ramp-box"></i>
+                        </span>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800" id="cart-title">CARRO A</h2>
+                            <p class="text-xs text-slate-500">Gestión de 30 Notebooks (#1 al #30)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progreso del Carro Activo -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 min-w-[300px]">
+                    <div class="flex-1">
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span class="text-slate-600">Progreso de Mantenimiento</span>
+                            <span class="text-sky-600" id="cart-progress-text">0 / 30 (0%)</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                            <div id="cart-progress-bar" class="bg-sky-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acciones del Carro -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="exportCurrentCartToExcel()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-2 rounded-xl transition border border-emerald-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-excel"></i>
+                        Exportar Carro
+                    </button>
+                    <button onclick="markAllCurrentCart(true)" class="bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-semibold px-3 py-2 rounded-xl transition border border-sky-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-check-double"></i>
+                        Marcar Todas OK
+                    </button>
+                    <button onclick="markAllCurrentCart(false)" class="bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold px-3 py-2 rounded-xl transition border border-amber-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        Desmarcar Todas
+                    </button>
+                    <button onclick="confirmResetCart()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold px-3 py-2 rounded-xl transition border border-rose-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-trash"></i>
+                        Resetear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Barra de Filtros y Búsqueda -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                <!-- Filtros por Estado -->
+                <div class="flex flex-wrap items-center bg-slate-100 p-1 rounded-2xl w-full md:w-auto gap-1">
+                    <button onclick="setFilter('all')" id="filter-all" class="filter-btn flex-1 md:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-xl transition text-slate-700 bg-white shadow-sm">
+                        Todas (<span id="count-all">30</span>)
+                    </button>
+                    <button onclick="setFilter('completed')" id="filter-completed" class="filter-btn flex-1 md:flex-none px-3.5 py-1.5 text-xs font-medium rounded-xl transition text-slate-600 hover:text-slate-900">
+                        Completadas (<span id="count-completed">0</span>)
+                    </button>
+                    <button onclick="setFilter('pending')" id="filter-pending" class="filter-btn flex-1 md:flex-none px-3.5 py-1.5 text-xs font-medium rounded-xl transition text-slate-600 hover:text-slate-900">
+                        Pendientes (<span id="count-pending">30</span>)
+                    </button>
+                    <button onclick="setFilter('service')" id="filter-service" class="filter-btn flex-1 md:flex-none px-3.5 py-1.5 text-xs font-medium rounded-xl transition text-slate-600 hover:text-slate-900">
+                        En Service (<span id="count-service">0</span>)
+                    </button>
+                </div>
+
+                <!-- Buscador por número o notas -->
+                <div class="relative w-full md:w-72">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Buscar PC (ej. PC-05, pantalla, cargador)..." class="w-full text-xs pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all">
+                </div>
+            </div>
+
+            <!-- Grilla de las 30 PCs del Carro -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="pcs-grid">
+                <!-- Renderizado dinámico de tarjetas PC -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- NOTIFICACIONES TOAST -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- MODAL DE CONFIRMACIÓN PERSONALIZADO -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="flex items-center space-x-3 text-amber-500 mb-3">
+                <div class="p-3 bg-amber-100 text-amber-600 rounded-2xl">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800" id="modalTitle">Confirmar Acción</h3>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-600 mb-6" id="modalMessage">¿Estás seguro de que deseas realizar esta acción?</p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeConfirmModal(false)" class="px-4 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+                    Cancelar
+                </button>
+                <button id="modalConfirmBtn" onclick="closeConfirmModal(true)" class="px-4 py-2.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition">
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
