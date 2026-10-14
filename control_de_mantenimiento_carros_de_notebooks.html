@@ -32,6 +32,27 @@
             }
         }
     </script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyA28Fu-WSGTJ9MqAoN40y7_oA5FulfmEhY",
+    authDomain: "notebooksofitecnica.firebaseapp.com",
+    databaseURL: "https://notebooksofitecnica-default-rtdb.firebaseio.com",
+    projectId: "notebooksofitecnica",
+    storageBucket: "notebooksofitecnica.firebasestorage.app",
+    messagingSenderId: "832805103138",
+    appId: "1:832805103138:web:09abbec2d0674f59e54c7b"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+</script>
+    
     <style>
         ::-webkit-scrollbar {
             width: 6px;
